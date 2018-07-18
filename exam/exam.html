@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>例子集成</title>
+		<link rel="stylesheet" href="../css/ol.css" />
+		<link rel="stylesheet" href="../css/measure.css" />
+		<script type="text/javascript" src="../js/ol/ol.js"></script>
+		<!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+		<script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+		<script type="text/javascript" src="../js/jquery-3.2.1.js"></script>
+		<script type="text/javascript" src="../js/measure.js"></script>
+	</head>
+
+	<body>
+		<!--注意：需要设置tabindex，才能使div获得键盘左、右移动事件-->
+		<!--ctrl和+、-能实现放大缩小功能-->
+		<div id="map" tabindex="0" class="map"></div>
+		<div class="map-control">
+			<div id="lonlat" class="lonlat">经纬度</div>
+			<!--<div id="scaleLine" id="scaleLine">比例尺</div>-->
+		</div>
+		<div id="handle" class="handle">
+			<div class="displayOrnone"> 显示/隐藏：
+				<input type="checkbox" checked="checked" onclick="checkOsm(this);" />底图
+				<input type="checkbox" checked="checked" onclick="checkCircle(this);" />圆
+				<input type="checkbox" checked="checked" onclick="checkPoint(this);" />点
+			</div>
+			<div class="order">
+				图层顺序：
+				<input name="seq" type="radio" value="" onclick="upOsm(this);" />底图最上
+				<input name="seq" type="radio" value="" checked="checked" onclick="upCircle(this);" />圆最上
+				<input name="seq" type="radio" value="" onclick="upPoint(this);" />点最上
+			</div>
+			<div>
+				<span>当前层级：</span>
+				<span id="zoom"></span>
+				<span>分辨率：</span>
+				<span id="resolution"></span>
+			</div>
+			<div class="form-inline">
+				<label>Measurement type &nbsp;</label>
+				<select id="type">
+					<option value="LineString">LineString</option>
+					<option value="Polygon">Polygon</option>
+					<option value="None" selected="true">None</option>
+				</select>
+			</div>
+			<div id="info">No countries selected</div>
+		</div>
+		<script>
+			/**
+			 * Currently drawn feature.
+			 * @type {ol.Feature}
+			 */
+			var sketch;
+			/**
+			 * The help tooltip element.
+			 * @type {Element}
+			 */
+			var helpTooltipElement;
+			/**
+			 * Overlay to show the help messages.
+			 * @type {ol.Overlay}
+			 */
+			var helpTooltip;
+			/**
+			 * The measure tooltip element.
+			 * @type {Element}
+			 */
+			var measureTooltipElement;
+			/**
+			 * Overlay to show the measurement.
+			 * @type {ol.Overlay}
+			 */
+			var measureTooltip;
+			/**
+			 * Message to show when the user is drawing a polygon.
+			 * @type {string}
+			 */
+			var continuePolygonMsg = 'Click to continue drawing the polygon';
+			/**
+			 * Message to show when the user is drawing a line.
+			 * @type {string}
+			 */
+			var continueLineMsg = 'Click to continue drawing the line';
+			/**
+			 * Handle pointer move.
+			 * @param {ol.MapBrowserEvent} evt The event.
+			 */
+
+			//将经纬度坐标转为平面坐标 ，设置北京为地图中心，此处进行坐标转换， 把EPSG:4326的坐标，转换为EPSG:3857坐标，因为ol默认使用的是EPSG:3857坐标    
+			var center = ol.proj.transform([116.39, 39.9], 'EPSG:4326', 'EPSG:3857');
+			//用于显示比例尺
+			var scaleLineControl = new ol.control.ScaleLine();
+			scaleLineControl.setUnits('metric');
+			// 底图图层
+			var osmLayer = new ol.layer.Tile({
+				source: new ol.source.OSM()
+			});
+			//点矢量图层
+			var pointLayer = new ol.layer.Vector({
+				source: new ol.source.Vector()
+			});
+			//圆矢量图层
+			var circleLayer = new ol.layer.Vector({
+				source: new ol.source.Vector()
+			});
+
+			//feature+setStyle实现标注
+			var anchorLayer = new ol.layer.Vector({
+				source: new ol.source.Vector()
+			})
+			var anchor = new ol.Feature({
+				geometry: new ol.geom.Point(center)
+			});
+			anchor.setStyle(new ol.style.Style({
+				image: new ol.style.Icon({
+					src: 'http://www.williambuck.com/portals/0/Skins/WilliamBuck2014/images/location-icon.svg',
+					size: [30, 30]
+				})
+			}));
+			//矢量图层添加要素
+			anchorLayer.getSource().addFeature(anchor);
+			//用于绘制线、面要素的图层
+			var source = new ol.source.Vector({
+				wrapX: false
+			});
+			//用于绘制线、面要素的矢量图层
+			var vector = new ol.layer.Vector({
+				source: source,
+				style: new ol.style.Style({
+					fill: new ol.style.Fill({
+						color: 'rgba(255, 255, 255, 0.7)'
+					}),
+					stroke: new ol.style.Stroke({
+						color: '#ffcc33',
+						width: 2
+					}),
+					image: new ol.style.Circle({
+						radius: 7,
+						fill: new ol.style.Fill({
+							color: '#ffcc33'
+						})
+					})
+				})
+			});
+
+			var vectorSource = new ol.source.Vector({
+				url: 'https://openlayers.org/en/v4.6.4/examples/data/geojson/countries.geojson',
+				format: new ol.format.GeoJSON(),
+			});
+			var vectorLayer = new ol.layer.Vector({
+				source: vectorSource
+			});
+			var map = new ol.Map({
+				controls: ol.control.defaults({
+					attribution: false,
+				}).extend([
+					new ol.control.FullScreen(),
+					new ol.control.OverviewMap(),
+					new ol.control.Rotate(),
+					//new ol.control.Zoom(),
+					new ol.control.ZoomToExtent(),
+					scaleLineControl,
+
+				]),
+				interactions: ol.interaction.defaults().extend([
+					new ol.interaction.DragRotateAndZoom()
+				]),
+				layers: [osmLayer, pointLayer, circleLayer, anchorLayer, vector, vectorLayer],
+				view: new ol.View({
+
+					center: center,
+					//center: ol.proj.fromLonLat([-72.980624870461128, 48.161307640513321]),
+					rotation: Math.PI / 8,
+					zoom: 10
+				}),
+				target: 'map'
+			});
+
+			//        // 下面把上面的图标附加到地图上，需要一个ol.Overlay
+			//		  var anchor = new ol.Overlay({
+			//		    element: document.getElementById('anchor')
+			//		  });
+			//		  // 关键的一点，需要设置附加到地图上的位置
+			//		  anchor.setPosition(center);
+			//		  // 然后添加到map上
+			//		  map.addOverlay(anchor);
+
+			//监听鼠标移动事件
+			map.on('pointermove', pointerMoveHandler);
+
+			/***********************监听地图层级和分辨率*********************/
+			// 监听层级变化，输出当前层级和分辨率
+			map.getView().on('change:resolution', function() {
+				document.getElementById('zoom').innerHTML = this.getZoom() + '，';
+				document.getElementById('resolution').innerHTML = this.getResolution() + "米";
+				var style = anchor.getStyle();
+				// 重新设置图标的缩放率，基于层级10来做缩放
+				style.getImage().setScale(this.getZoom() / 10);
+				anchor.setStyle(style);
+			})
+
+			document.getElementById('zoom').innerHTML = map.getView().getZoom() + '，';
+			document.getElementById('resolution').innerHTML = map.getView().getResolution() + "米";
+			/***********************监听地图层级和分辨率*********************/
+
+			//实例化点要素
+			var point = new ol.Feature({
+				geometry: new ol.geom.Point(center)
+			});
+			//设置点要素样式
+			point.setStyle(new ol.style.Style({
+				image: new ol.style.Circle({
+					radius: 5,
+					fill: new ol.style.Fill({
+						color: 'red'
+					}),
+					stroke: new ol.style.Stroke({
+						color: 'red',
+						size: 1
+					})
+				})
+			}));
+			//将点要素添加到点矢量图层
+			pointLayer.getSource().addFeature(point);
+			// 实例化圆要素
+			var circle = new ol.Feature({
+				geometry: new ol.geom.Point(center)
+			});
+			circle.setStyle(new ol.style.Style({
+				image: new ol.style.Circle({
+					radius: 20,
+					stroke: new ol.style.Stroke({
+						color: 'blue',
+						size: 1
+					})
+				})
+			}));
+			circleLayer.getSource().addFeature(circle);
+
+			//添加鼠标离开地图事件
+			map.getViewport().addEventListener('mouseout', function() {
+				if(helpTooltipElement) {
+					helpTooltipElement.classList.add('hidden');
+				}
+			});
+
+			var draw; // global so we can remove it later
+			/**
+			 * Let user change the geometry type.
+			 */
+			var typeSelect = document.getElementById('type');
+			typeSelect.onchange = function() {
+				removeLastGeometry()
+				map.removeInteraction(draw);
+				addInteraction();
+			};
+			//addInteraction();
+
+			/*********************box selection********************/
+			//a normal select interaction to handle click
+			var select = new ol.interaction.Select();
+			map.addInteraction(select);
+			var selectedFeatures = select.getFeatures();
+
+			
+
+			// a DragBox interaction used to select features by drawing boxes
+			var dragBox = new ol.interaction.DragBox({
+				condition: ol.events.condition.platformModifierKeyOnly
+				//Ctrl键被按下时
+			});
+
+			map.addInteraction(dragBox);
+
+			dragBox.on('boxend', function() {
+				// features that intersect the box are added to the collection of
+				// selected features
+				var extent = dragBox.getGeometry().getExtent();
+				vectorSource.forEachFeatureIntersectingExtent(extent, function(feature) {
+					selectedFeatures.push(feature);
+				});
+			});
+
+			// clear selection when drawing a new box and when clicking on the map
+			dragBox.on('boxstart', function() {
+				selectedFeatures.clear();
+			});
+
+			var infoBox = document.getElementById('info');
+
+			selectedFeatures.on(['add', 'remove'], function() {
+				console.log(selectedFeatures);
+				var names = selectedFeatures.getArray().map(function(feature) {
+					console.log(feature.get('name'));
+					return feature.get('name');
+				});
+				if(names.length > 0) {
+					infoBox.innerHTML = names.join(', ');
+				} else {
+					infoBox.innerHTML = 'No countries selected';
+				}
+			});
+			/*********************box selection********************/
+		</script>
+	</body>
+
+</html>

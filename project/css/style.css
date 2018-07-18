@@ -1,0 +1,287 @@
+body {
+	margin: 0;
+}
+
+.map {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	cursor: pointer;
+}
+
+
+/***************************画线、画面*****************************/
+
+.form-inline {
+	position: absolute;
+	background: #474746;
+	color: white;
+	left: 50%;
+	margin-left: -71px;
+	/* text-align: center; */
+	bottom: 8px;
+	padding: 2px;
+	z-index: 2247483647
+}
+
+.form-inline>span {
+	padding: 0 10px;
+	line-height: 25px;
+	border-right: 1px dashed;
+}
+
+.form-inline>span:last-child {
+	border-right: none;
+}
+
+.form-inline>span:hover {
+	color: dodgerblue;
+	cursor: default;
+	border-color: white;
+}
+
+
+/*******************经纬度信息样式********************/
+
+.lonlat {
+	position: absolute;
+	background: #474746;
+	color: white;
+	padding: 2px 5px;
+	right: 10px;
+	bottom: 0.5em;
+	font-family: "Times New Roman";
+	font-size: 14px;
+	z-index: 2247483647
+}
+
+
+/****************************比例尺样式***********************/
+
+.ol-scale-line {
+	background-color: #474746;
+	color: white;
+	bottom: 0.5em;
+	left: 200px;
+	position: absolute;
+	z-index: 2247483647;
+	border: 1px solid #747171;
+}
+
+.ol-scale-line-inner {
+	color: white;
+	font-family: "Times New Roman";
+	font-size: 14px;
+	height: 15px;
+	/*border: 1px #000 solid;*/
+	border-top: none;
+}
+
+
+/*******************提示样式****************/
+
+.tooltip {
+	position: relative;
+	background: rgba(0, 0, 0, 0.5);
+	border-radius: 4px;
+	color: white;
+	padding: 4px 8px;
+	opacity: 0.7;
+	white-space: nowrap;
+}
+
+.tooltip-measure {
+	opacity: 1;
+	font-weight: bold;
+}
+
+.tooltip-static {
+	background-color: #ffcc33;
+	color: black;
+	border: 1px solid white;
+}
+
+.tooltip-measure:before,
+.tooltip-static:before {
+	border-top: 6px solid rgba(0, 0, 0, 0.5);
+	border-right: 6px solid transparent;
+	border-left: 6px solid transparent;
+	content: "";
+	position: absolute;
+	bottom: -6px;
+	margin-left: -7px;
+	left: 50%;
+}
+
+.tooltip-static:before {
+	border-top-color: #ffcc33;
+}
+
+
+/**********************鹰眼图点击按钮****************/
+
+.ol-overviewmap:not(.ol-collapsed) button {
+	bottom: 3px;
+}
+
+
+/******************地图控件******************/
+
+.map-control {
+	position: absolute;
+	top: 5px;
+	right: 40px;
+	z-index: 2247483647
+}
+
+
+/***************全屏样式**************/
+
+.map:-moz-full-screen {
+	height: 100%;
+}
+
+.map:-webkit-full-screen {
+	height: 100%;
+}
+
+.map:-ms-fullscreen {
+	height: 100%;
+}
+
+.map:fullscreen {
+	height: 100%;
+}
+
+.ol-full-screen {
+	top: 0;
+	right: -33px;
+}
+
+
+/******************缩放控件样式*******************/
+
+.button {
+	margin: 3px 0;
+	padding: 2px;
+	color: #fff;
+	font-size: 1.14em;
+	font-weight: 700;
+	text-decoration: none;
+	text-align: center;
+	height: 1.375em;
+	width: 1.375em;
+	line-height: .4em;
+	background-color: rgba(0, 60, 136, .5);
+	border: none;
+	border-radius: 2px;
+}
+
+.zoom:focus,
+.zoom:hover {
+	background-color: rgba(0, 60, 136, .7)
+}
+
+.up {
+	transform: rotate(270deg);
+	-webkit-transform: rotate(270deg);
+	/*兼容-webkit-引擎浏览器*/
+	-moz-transform: rotate(270deg);
+	/*兼容-moz-引擎浏览器*/
+}
+
+.down {
+	transform: rotate(90deg);
+	-webkit-transform: rotate(90deg);
+	/*兼容-webkit-引擎浏览器*/
+	-moz-transform: rotate(90deg);
+	/*兼容-moz-引擎浏览器*/
+}
+
+.hidden {
+	display: none;
+}
+
+
+/***********************地图切换************************/
+
+#current_map_type {
+	position: absolute;
+	top: 10px;
+	left: 40px;
+	padding: 1px;
+	border: 1px solid black;
+}
+
+.mapTypeImg {
+	width: 50px;
+	height: 50px;
+}
+
+#map_type {
+	position: absolute;
+	top: 70px;
+	left: 40px;
+	border: 1px solid blue;
+	padding: 2px;
+	padding-bottom: 0;
+}
+
+#map_type:hover {
+	display: block;
+}
+
+.map_select {
+	display: inline-block;
+	padding: 1px;
+	border: 1px solid black;
+}
+
+.mapTypeControl {
+	height: 50px;
+}
+/****************************弹出框样式******************************/
+.ol-popup {
+	position: absolute;
+	background-color: white;
+	-webkit-filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.2));
+	filter: drop-shadow(4px 4px 4px rgba(255, 0, 0, 0.2));
+	padding: 15px;
+	border-radius: 10px;
+	border: 1px solid #cccccc;
+	/*bottom: 12px;*/
+	left: -50px;
+	min-width: 240px;
+	display: none;
+}
+
+P {
+	text-align: center;
+	margin: 0;
+}
+
+
+/*.ol-popup:after,*/
+
+.ol-popup:before {
+	border: solid transparent;
+	border-right-color: white;
+	left: -20px;
+	border-width: 10px;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+	pointer-events: none;
+}
+
+.ol-popup-closer {
+	text-decoration: none;
+	position: absolute;
+	top: 2px;
+	right: 8px;
+}
+
+.ol-popup-closer:after {
+	content: "✖";
+}
